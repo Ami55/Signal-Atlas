@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { ensureSchema, getSql } from "@/db/vercel";
 
 export const dynamic = "force-dynamic";
 
@@ -39,10 +39,12 @@ function add(map: Map<string, number>, key: string) { map.set(key, (map.get(key)
 function ranked(map: Map<string, number>, limit = 10) { return [...map].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, limit); }
 
 export async function GET() {
-  const result = await env.DB.prepare(`SELECT id, query, ai_text AS aiText, tbl_mentioned AS tblMentioned,
-    location, mentioned_sites AS mentionedSites, cited_sources AS citedSources
-    FROM captures ORDER BY created_at DESC LIMIT 5000`).all<Row>();
-  const rows = result.results ?? [];
+  await ensureSchema();
+  const sql = getSql();
+  const result = await sql`SELECT id, query, ai_text AS "aiText", tbl_mentioned AS "tblMentioned",
+    location, mentioned_sites AS "mentionedSites", cited_sources AS "citedSources"
+    FROM captures ORDER BY created_at DESC LIMIT 5000` as Array<Record<string, unknown>>;
+  const rows = result.map((row) => ({ ...row, id: Number(row.id), tblMentioned: Number(row.tblMentioned) })) as Row[];
   const competitors = new Map<string, number>();
   const domains = new Map<string, number>();
   const tblPages = new Map<string, number>();

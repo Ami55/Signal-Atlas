@@ -1,4 +1,5 @@
-import { env } from "cloudflare:workers";
+import { del, put } from "@vercel/blob";
+import { ensureSchema, getSql } from "@/db/vercel";
 
 export const dynamic = "force-dynamic";
 
@@ -7,19 +8,24 @@ function normalizeQuery(value: string) {
 }
 
 export async function GET() {
-  const result = await env.DB.prepare(`SELECT id, created_at AS createdAt, query, google_url AS googleUrl,
-    ai_text AS aiText, tbl_mention AS tblMention, tbl_mentioned AS tblMentioned,
-    contributor, location, notes, mentioned_sites AS mentionedSites,
-    cited_sources AS citedSources, screenshot_key AS screenshotKey
-    FROM captures ORDER BY created_at DESC LIMIT 250`).all();
-  const rows = (result.results ?? []).map((row) => ({
+  await ensureSchema();
+  const sql = getSql();
+  const result = await sql`SELECT id, created_at AS "createdAt", query, google_url AS "googleUrl",
+    ai_text AS "aiText", tbl_mention AS "tblMention", tbl_mentioned AS "tblMentioned",
+    contributor, location, notes, mentioned_sites AS "mentionedSites",
+    cited_sources AS "citedSources", screenshot_key AS "screenshotKey"
+    FROM captures ORDER BY created_at DESC LIMIT 250` as Array<Record<string, unknown>>;
+  const rows = result.map((row) => ({
     ...row,
-    screenshotUrl: row.screenshotKey ? `/api/screenshots/${row.screenshotKey}` : null,
+    id: Number(row.id),
+    screenshotUrl: row.screenshotKey || null,
   }));
   return Response.json(rows);
 }
 
 export async function POST(request: Request) {
+  await ensureSchema();
+  const sql = getSql();
   const data = await request.formData();
   const query = String(data.get("query") ?? "").trim();
   const googleUrl = String(data.get("googleUrl") ?? "").trim();
@@ -35,9 +41,8 @@ export async function POST(request: Request) {
   }
 
   const queryNorm = normalizeQuery(query);
-  const duplicate = await env.DB.prepare("SELECT id, query FROM captures WHERE query_norm = ? LIMIT 1")
-    .bind(queryNorm)
-    .first<{ id: number; query: string }>();
+  const duplicates = await sql`SELECT id, query FROM captures WHERE query_norm = ${queryNorm} LIMIT 1` as Array<Record<string, unknown>>;
+  const duplicate = duplicates[0];
   if (duplicate) {
     return Response.json({ error: "Duplicate query", duplicateId: duplicate.id, existingQuery: duplicate.query }, { status: 409 });
   }
@@ -45,32 +50,35 @@ export async function POST(request: Request) {
   let screenshotKey: string | null = null;
   const screenshot = data.get("screenshot");
   if (screenshot instanceof File && screenshot.size > 0) {
-    if (screenshot.size > 8_000_000 || !["image/png", "image/jpeg", "image/webp"].includes(screenshot.type)) {
-      return Response.json({ error: "Screenshot must be PNG, JPEG, or WebP under 8 MB" }, { status: 400 });
+    if (screenshot.size > 4_000_000 || !["image/png", "image/jpeg", "image/webp"].includes(screenshot.type)) {
+      return Response.json({ error: "Screenshot must be PNG, JPEG, or WebP under 4 MB" }, { status: 400 });
     }
-    screenshotKey = `${crypto.randomUUID()}-${screenshot.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
-    await env.SNAPSHOTS.put(screenshotKey, await screenshot.arrayBuffer(), { httpMetadata: { contentType: screenshot.type } });
+    const filename = `${crypto.randomUUID()}-${screenshot.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+    const blob = await put(`snapshots/${filename}`, screenshot, { access: "public", addRandomSuffix: false });
+    screenshotKey = blob.url;
   }
 
   const createdAt = new Date().toISOString();
-  const result = await env.DB.prepare(`INSERT INTO captures
+  const result = await sql`INSERT INTO captures
     (created_at, query, query_norm, google_url, ai_text, tbl_mention, tbl_mentioned, contributor, location, notes, mentioned_sites, cited_sources, screenshot_key)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(createdAt, query, queryNorm, googleUrl, aiText, tblMention, tblMention ? 1 : 0, contributor, location, notes, mentionedSites, citedSources, screenshotKey).run();
-  return Response.json({ id: result.meta.last_row_id, createdAt }, { status: 201 });
+    VALUES (${createdAt}, ${query}, ${queryNorm}, ${googleUrl}, ${aiText}, ${tblMention}, ${tblMention ? 1 : 0}, ${contributor}, ${location}, ${notes}, ${mentionedSites}, ${citedSources}, ${screenshotKey})
+    RETURNING id` as Array<Record<string, unknown>>;
+  return Response.json({ id: Number(result[0].id), createdAt }, { status: 201 });
 }
 
 export async function DELETE(request: Request) {
+  await ensureSchema();
+  const sql = getSql();
   const id = Number(new URL(request.url).searchParams.get("id"));
   if (!Number.isInteger(id) || id < 1) {
     return Response.json({ error: "Invalid snapshot id" }, { status: 400 });
   }
 
-  const existing = await env.DB.prepare("SELECT screenshot_key AS screenshotKey FROM captures WHERE id = ?")
-    .bind(id)
-    .first<{ screenshotKey: string | null }>();
+  const existingRows = await sql`SELECT screenshot_key AS "screenshotKey" FROM captures WHERE id = ${id}` as Array<Record<string, unknown>>;
+  const existing = existingRows[0];
   if (!existing) return Response.json({ error: "Snapshot not found" }, { status: 404 });
 
-  await env.DB.prepare("DELETE FROM captures WHERE id = ?").bind(id).run();
-  if (existing.screenshotKey) await env.SNAPSHOTS.delete(existing.screenshotKey);
+  await sql`DELETE FROM captures WHERE id = ${id}`;
+  if (existing.screenshotKey) await del(String(existing.screenshotKey));
   return Response.json({ deleted: true });
 }
