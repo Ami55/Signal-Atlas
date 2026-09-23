@@ -1,0 +1,1 @@
+CREATE INDEX `idx_captures_created_at` ON `captures` (`created_at`);

@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1790022521460,
+      "tag": "0000_keen_archangel",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790022545258,
+      "tag": "0001_parched_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790027108822,
+      "tag": "0002_round_captain_stacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790039200000,
+      "tag": "0003_remove_invalid_legacy_capture",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790125800000,
+      "tag": "0004_remove_legacy_captures_without_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790127600000,
+      "tag": "0005_prevent_duplicate_queries",
+      "breakpoints": true
+    }
+  ]
+}
