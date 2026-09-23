@@ -32,7 +32,9 @@ const topicPatterns: Array<[string, RegExp]> = [
   ["Destination tours", /\b(rome|paris|london|tokyo|barcelona|athens|lisbon|florence|vatican|kyoto|amsterdam|istanbul|alaska)\b/i],
 ];
 
-function lines(value: string) { return value.split(/\n|,/).map((item) => item.trim()).filter(Boolean); }
+function lines(value: string) {
+  return [...new Set(value.split(/(?=https?:\/\/)|[\n,]+/i).map((item) => item.trim()).filter(Boolean))];
+}
 function add(map: Map<string, number>, key: string) { map.set(key, (map.get(key) ?? 0) + 1); }
 function ranked(map: Map<string, number>, limit = 10) { return [...map].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, limit); }
 

@@ -80,11 +80,6 @@ export default function Home() {
   });
 
   const mention = useMemo(() => getMention(form.aiText), [form.aiText]);
-  const tblPages = useMemo(() => {
-    const counts = new Map<string, number>();
-    captures.flatMap((capture) => sourceLines(capture.citedSources)).filter((url) => /(^|\.)toursbylocals\.com/i.test(sourceDomain(url))).forEach((url) => counts.set(url, (counts.get(url) ?? 0) + 1));
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  }, [captures]);
 
   async function loadCaptures() {
     const response = await fetch("/api/captures");
@@ -252,7 +247,6 @@ export default function Home() {
         <section className="library">
           <div className="library-heading"><div><p className="eyebrow">Shared intelligence</p><h1>Snapshot library</h1></div><button onClick={() => setView("capture")}>+ New capture</button></div>
           <div className="metrics"><div><strong>{captures.length}</strong><span>Total snapshots</span></div><div><strong>{captures.filter((c) => c.tblMentioned).length}</strong><span>ToursByLocals mentions</span></div><div><strong>{captures.filter((c) => /toursbylocals\.com/i.test(c.citedSources || "")).length}</strong><span>ToursByLocals citations</span></div></div>
-          <div className="owned-pages"><div><p className="card-kicker">Owned visibility</p><h2>ToursByLocals pages found</h2><p>Every ToursByLocals page cited across the captured searches, kept separately from competitor sources.</p></div>{tblPages.length ? <div className="owned-page-list">{tblPages.map(([url, count]) => <a href={url} target="_blank" rel="noreferrer" key={url}><span><strong>{sourcePath(url)}</strong><small>{sourceDomain(url)}</small></span><b>{count}× cited</b><i>↗</i></a>)}</div> : <div className="owned-empty">No ToursByLocals page URLs have been cited yet.</div>}</div>
           <div className="capture-list">
             {captures.length === 0 ? <div className="empty"><span>✦</span><h2>No snapshots yet</h2><p>Capture the first Google AI Overview to begin the evidence library.</p></div> : captures.map((capture) => (
               <article key={capture.id} className="capture-item">
