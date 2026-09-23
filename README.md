@@ -18,6 +18,12 @@ No OpenAI API key is required.
 
 The database table is created automatically the first time the app loads. Existing records from the Sites/Cloudflare edition are not copied automatically.
 
+## Import the previous records
+
+After deployment, open the Capture page and use **Move previous data**. Select the previous `prompt-responses-2026-09-22.csv` export and click **Import previous records**. Duplicate prompts are skipped automatically, so it is safe to run the import again.
+
+The legacy CSV contains prompts, mentioned brands, citations, topic and search volume. It does not contain the complete AI Overview text or screenshots, so those fields are labelled as legacy data after import.
+
 ## Environment variables
 
 ```text
