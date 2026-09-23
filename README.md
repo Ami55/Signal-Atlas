@@ -22,7 +22,7 @@ The database table is created automatically the first time the app loads. Existi
 
 After deployment, open the Capture page and use **Move previous data**. Select the previous `prompt-responses-2026-09-22.csv` export and click **Import previous records**. Duplicate prompts are skipped automatically, so it is safe to run the import again.
 
-The legacy CSV contains prompts, mentioned brands, citations, topic and search volume. It does not contain the complete AI Overview text or screenshots, so those fields are labelled as legacy data after import.
+The current Signal Atlas export includes the complete AI Overview text and all stored record fields. Screenshots are stored separately and are not embedded in the CSV. The importer also accepts the older prompt-response CSV format; that older format does not contain complete AI Overview text or screenshots.
 
 ## Environment variables
 

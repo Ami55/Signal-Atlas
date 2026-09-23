@@ -11,6 +11,19 @@ type LegacyRow = {
   "Mentioned Brand Names"?: string;
   "Citation URLs"?: string;
   Time?: string;
+  created_at?: string;
+  query?: string;
+  query_norm?: string;
+  google_url?: string;
+  ai_text?: string;
+  tbl_mention?: string;
+  tbl_mentioned?: string;
+  contributor?: string;
+  location?: string;
+  notes?: string;
+  mentioned_sites?: string;
+  cited_sources?: string;
+  screenshot_key?: string;
 };
 
 function normalizeQuery(value: string) {
@@ -40,25 +53,30 @@ export async function POST(request: Request) {
     relax_column_count: true,
     trim: true,
   }) as LegacyRow[];
-  const valid = rows.filter((row) => row.Prompt?.trim());
+  const valid = rows.filter((row) => row.query?.trim() || row.Prompt?.trim());
   let imported = 0;
 
   for (let start = 0; start < valid.length; start += 50) {
     const batch = valid.slice(start, start + 50).map((row) => {
-      const query = row.Prompt!.trim();
-      const mentionedSites = asLines(row["Mentioned Brand Names"] ?? "");
-      const citedSources = asLines(row["Citation URLs"] ?? "");
-      const tblMentioned = /toursbylocals/i.test(mentionedSites) ? 1 : 0;
+      const isFullExport = Boolean(row.query?.trim());
+      const query = (row.query || row.Prompt || "").trim();
+      const mentionedSites = isFullExport ? (row.mentioned_sites ?? "") : asLines(row["Mentioned Brand Names"] ?? "");
+      const citedSources = isFullExport ? (row.cited_sources ?? "") : asLines(row["Citation URLs"] ?? "");
+      const tblMentioned = isFullExport ? Number(row.tbl_mentioned || 0) : (/toursbylocals/i.test(mentionedSites) ? 1 : 0);
       const topic = row["Topic Name"]?.trim() || "Legacy capture";
       const volume = row["Monthly Search Volume"]?.trim();
       const model = row["Model Name"]?.trim() || "Google AI Overview";
-      const notes = [topic, volume ? `Monthly search volume: ${volume}` : "", `Imported from ${model}`].filter(Boolean).join(" · ");
-      const createdAt = row.Time?.trim() || new Date().toISOString();
-      const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-      const aiText = "Legacy capture imported from the previous Signal Atlas dataset. The original export did not include the full AI Overview text.";
+      const notes = isFullExport ? (row.notes ?? "") : [topic, volume ? `Monthly search volume: ${volume}` : "", `Imported from ${model}`].filter(Boolean).join(" · ");
+      const createdAt = row.created_at?.trim() || row.Time?.trim() || new Date().toISOString();
+      const googleUrl = row.google_url?.trim() || `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      const aiText = row.ai_text?.trim() || "Legacy capture imported from the previous Signal Atlas dataset. The original export did not include the full AI Overview text.";
+      const tblMention = row.tbl_mention?.trim() || (tblMentioned ? "ToursByLocals" : "");
+      const contributor = row.contributor?.trim() || "Legacy import";
+      const location = row.location?.trim() || "Not recorded";
+      const screenshotKey = row.screenshot_key?.startsWith("http") ? row.screenshot_key : null;
       return sql`INSERT INTO captures
         (created_at, query, query_norm, google_url, ai_text, tbl_mention, tbl_mentioned, contributor, location, notes, mentioned_sites, cited_sources, screenshot_key)
-        VALUES (${createdAt}, ${query}, ${normalizeQuery(query)}, ${googleUrl}, ${aiText}, ${tblMentioned ? "ToursByLocals" : ""}, ${tblMentioned}, ${"Legacy import"}, ${"Not recorded"}, ${notes}, ${mentionedSites}, ${citedSources}, ${null})
+        VALUES (${createdAt}, ${query}, ${row.query_norm?.trim() || normalizeQuery(query)}, ${googleUrl}, ${aiText}, ${tblMention}, ${tblMentioned}, ${contributor}, ${location}, ${notes}, ${mentionedSites}, ${citedSources}, ${screenshotKey})
         ON CONFLICT (query_norm) DO NOTHING
         RETURNING id`;
     });
