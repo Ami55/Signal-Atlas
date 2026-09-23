@@ -66,11 +66,8 @@ export default function Home() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importMessage, setImportMessage] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const bookmarkRef = useRef<HTMLAnchorElement>(null);
-  const importFileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     googleUrl: "",
     query: "",
@@ -174,29 +171,6 @@ export default function Home() {
     }
   }
 
-  async function importLegacyCsv() {
-    const file = importFileRef.current?.files?.[0];
-    if (!file) {
-      setImportMessage("Choose your previous CSV export first.");
-      return;
-    }
-    setImporting(true);
-    setImportMessage("");
-    const data = new FormData();
-    data.set("file", file);
-    try {
-      const response = await fetch("/api/import", { method: "POST", body: data });
-      const result = await response.json() as { imported?: number; skipped?: number; error?: string };
-      if (!response.ok) throw new Error(result.error || "Import failed");
-      setImportMessage(`${result.imported ?? 0} records imported. ${result.skipped ?? 0} duplicates skipped.`);
-      await Promise.all([loadCaptures(), loadInsights()]);
-    } catch (error) {
-      setImportMessage(error instanceof Error ? error.message : "The import could not be completed.");
-    } finally {
-      setImporting(false);
-    }
-  }
-
   return (
     <main>
       <header className="topbar">
@@ -241,12 +215,6 @@ export default function Home() {
               <p>Drag this button to your bookmarks bar. On Google, click it and Signal Atlas will find the AI Overview, text, and citations automatically.</p>
               <a ref={bookmarkRef} className="bookmark-button" href="#" onClick={(e) => e.preventDefault()} title="Drag this button to your bookmarks bar">✦ Capture AI Overview</a>
               <div className="tiny-note"><span>Fallback</span> If Google changes its layout, select the AI Overview text first and click the bookmark again—or paste it into the form.</div>
-              <div className="legacy-import">
-                <p className="card-kicker">Move previous data</p>
-                <label>Previous CSV export<input ref={importFileRef} type="file" accept=".csv,text/csv" /></label>
-                <button type="button" onClick={importLegacyCsv} disabled={importing}>{importing ? "Importing…" : "Import previous records"}</button>
-                {importMessage && <p>{importMessage}</p>}
-              </div>
             </aside>
 
             <form className="capture-form" onSubmit={submit}>

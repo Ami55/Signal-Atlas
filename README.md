@@ -16,13 +16,7 @@ No OpenAI API key is required.
 4. In **Storage**, create a **Blob** store with public access and connect it to the project. Vercel adds `BLOB_READ_WRITE_TOKEN` automatically.
 5. Open **Deployments** and redeploy the latest deployment.
 
-The database table is created automatically the first time the app loads. Existing records from the Sites/Cloudflare edition are not copied automatically.
-
-## Import the previous records
-
-After deployment, open the Capture page and use **Move previous data**. Select the previous `prompt-responses-2026-09-22.csv` export and click **Import previous records**. Duplicate prompts are skipped automatically, so it is safe to run the import again.
-
-The current Signal Atlas export includes the complete AI Overview text and all stored record fields. Screenshots are stored separately and are not embedded in the CSV. The importer also accepts the older prompt-response CSV format; that older format does not contain complete AI Overview text or screenshots.
+The database table is created automatically the first time the app loads. The 58 records exported from the previous Sites/Cloudflare edition are seeded into Neon automatically once. Duplicate queries are skipped and no import control is shown in the app. Screenshot files were stored separately and are not included in the seed.
 
 ## Environment variables
 
