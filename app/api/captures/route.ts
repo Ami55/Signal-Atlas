@@ -1,3 +1,4 @@
+import { mentionsBrand } from "@/app/brand";
 import { del, put } from "@vercel/blob";
 import { ensureSchema, getSql } from "@/db/vercel";
 
@@ -11,13 +12,14 @@ export async function GET() {
   await ensureSchema();
   const sql = getSql();
   const result = await sql`SELECT id, created_at AS "createdAt", query, google_url AS "googleUrl",
-    ai_text AS "aiText", tbl_mention AS "tblMention", tbl_mentioned AS "tblMentioned",
+    ai_text AS "aiText", brand_mention AS "brandMention", brand_mentioned AS "brandMentioned",
     contributor, location, notes, mentioned_sites AS "mentionedSites",
     cited_sources AS "citedSources", screenshot_key AS "screenshotKey"
-    FROM captures ORDER BY created_at DESC LIMIT 250` as Array<Record<string, unknown>>;
+    FROM public_brand_captures ORDER BY created_at DESC LIMIT 250` as Array<Record<string, unknown>>;
   const rows = result.map((row) => ({
     ...row,
     id: Number(row.id),
+    brandMentioned: Number(mentionsBrand(String(row.aiText || ""))),
     screenshotUrl: row.screenshotKey || null,
   }));
   return Response.json(rows);
@@ -35,13 +37,13 @@ export async function POST(request: Request) {
   const notes = String(data.get("notes") ?? "").trim();
   const mentionedSites = String(data.get("mentionedSites") ?? "").trim();
   const citedSources = String(data.get("citedSources") ?? "").trim();
-  const tblMention = String(data.get("tblMention") ?? "").trim();
+  const brandMention = aiText.split(/(?<=[.!?])\s+/).filter(mentionsBrand).slice(0, 3).join(" ");
   if (!query || !googleUrl || !aiText || !contributor || !location) {
     return Response.json({ error: "Missing required fields" }, { status: 400 });
   }
 
   const queryNorm = normalizeQuery(query);
-  const duplicates = await sql`SELECT id, query FROM captures WHERE query_norm = ${queryNorm} LIMIT 1` as Array<Record<string, unknown>>;
+  const duplicates = await sql`SELECT id, query FROM public_brand_captures WHERE query_norm = ${queryNorm} LIMIT 1` as Array<Record<string, unknown>>;
   const duplicate = duplicates[0];
   if (duplicate) {
     return Response.json({ error: "Duplicate query", duplicateId: duplicate.id, existingQuery: duplicate.query }, { status: 409 });
@@ -59,9 +61,9 @@ export async function POST(request: Request) {
   }
 
   const createdAt = new Date().toISOString();
-  const result = await sql`INSERT INTO captures
-    (created_at, query, query_norm, google_url, ai_text, tbl_mention, tbl_mentioned, contributor, location, notes, mentioned_sites, cited_sources, screenshot_key)
-    VALUES (${createdAt}, ${query}, ${queryNorm}, ${googleUrl}, ${aiText}, ${tblMention}, ${tblMention ? 1 : 0}, ${contributor}, ${location}, ${notes}, ${mentionedSites}, ${citedSources}, ${screenshotKey})
+  const result = await sql`INSERT INTO public_brand_captures
+    (created_at, query, query_norm, google_url, ai_text, brand_mention, brand_mentioned, contributor, location, notes, mentioned_sites, cited_sources, screenshot_key)
+    VALUES (${createdAt}, ${query}, ${queryNorm}, ${googleUrl}, ${aiText}, ${brandMention}, ${brandMention ? 1 : 0}, ${contributor}, ${location}, ${notes}, ${mentionedSites}, ${citedSources}, ${screenshotKey})
     RETURNING id` as Array<Record<string, unknown>>;
   return Response.json({ id: Number(result[0].id), createdAt }, { status: 201 });
 }
@@ -74,11 +76,11 @@ export async function DELETE(request: Request) {
     return Response.json({ error: "Invalid snapshot id" }, { status: 400 });
   }
 
-  const existingRows = await sql`SELECT screenshot_key AS "screenshotKey" FROM captures WHERE id = ${id}` as Array<Record<string, unknown>>;
+  const existingRows = await sql`SELECT screenshot_key AS "screenshotKey" FROM public_brand_captures WHERE id = ${id}` as Array<Record<string, unknown>>;
   const existing = existingRows[0];
   if (!existing) return Response.json({ error: "Snapshot not found" }, { status: 404 });
 
-  await sql`DELETE FROM captures WHERE id = ${id}`;
+  await sql`DELETE FROM public_brand_captures WHERE id = ${id}`;
   if (existing.screenshotKey) await del(String(existing.screenshotKey));
   return Response.json({ deleted: true });
 }
