@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
   const image = `${protocol}://${host}/og.png`;
   const title = "Signal Atlas — AI Search Evidence";
-  const description = "Capture and track how Google AI Overviews represent ToursByLocals.";
+  const description = "Capture and track brand mentions and citations in Google AI Overviews.";
   return {
     title,
     description,

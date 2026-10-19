@@ -42,16 +42,16 @@
           "notNull": true,
           "autoincrement": false
         },
-        "tbl_mention": {
-          "name": "tbl_mention",
+        "brand_mention": {
+          "name": "brand_mention",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "''"
         },
-        "tbl_mentioned": {
-          "name": "tbl_mentioned",
+        "brand_mentioned": {
+          "name": "brand_mentioned",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
