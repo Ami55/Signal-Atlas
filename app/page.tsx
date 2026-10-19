@@ -1,5 +1,7 @@
 "use client";
 
+import { targetBrand, targetDomain, isBrandDomain, mentionsBrand } from "./brand";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Capture = {
@@ -8,8 +10,8 @@ type Capture = {
   query: string;
   googleUrl: string;
   aiText: string;
-  tblMention: string;
-  tblMentioned: number;
+  brandMention: string;
+  brandMentioned: number;
   contributor: string;
   location: string;
   notes: string;
@@ -28,10 +30,10 @@ type Insights = {
   citationRate: number;
   citationCoverage: number;
   citationCoverageCount: number;
-  tblCitationCount: number;
+  brandCitationCount: number;
   topCompetitors: InsightItem[];
   topCitedDomains: InsightItem[];
-  topTblPages: InsightItem[];
+  topBrandPages: InsightItem[];
   opportunities: Opportunity[];
   topics: TopicInsight[];
   queryRows: QueryInsight[];
@@ -40,11 +42,11 @@ type Insights = {
 function getMention(text: string) {
   const normalized = text.replace(/\s+/g, " ").trim();
   const sentences = normalized.split(/(?<=[.!?])\s+|(?=[A-Z][A-Za-z &]{2,36}:)/).map((part) => part.trim()).filter(Boolean);
-  const matches = sentences.filter((part) => /toursbylocals/i.test(part));
+  const matches = sentences.filter((part) => mentionsBrand(part));
   return matches.slice(0, 3).join(" ");
 }
 
-const knownBrands = ["ToursByLocals", "Viator", "GetYourGuide", "Withlocals", "GoWithGuide", "Showaround", "Airbnb Experiences", "Tripadvisor"];
+const knownBrands = [targetBrand, "Viator", "GetYourGuide", "Withlocals", "GoWithGuide", "Showaround", "Airbnb Experiences", "Tripadvisor"];
 
 function inferredMentions(text: string, recorded: string) {
   const detected = knownBrands.filter((brand) => text.toLowerCase().includes(brand.toLowerCase()));
@@ -118,7 +120,7 @@ export default function Home() {
       location: current.location || rememberedLocation,
     }));
     const target = `${window.location.origin}/#capture-workspace`;
-    bookmarkRef.current?.setAttribute("href", `javascript:(()=>{const G=h=>{try{let x=new URL(h,location.href);if(x.hostname.includes('google.')&&x.pathname==='/url'&&x.searchParams.get('q'))x=new URL(x.searchParams.get('q'));return x.protocol.startsWith('http')&&!x.hostname.includes('google.')?x.href:null}catch{return null}},V=e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'},z=getSelection();let n=z&&z.rangeCount?z.getRangeAt(0).commonAncestorContainer:null;n=n&&n.nodeType===3?n.parentElement:n;let s=(z&&z.toString()||'').trim();if(!s){const m=[...document.querySelectorAll('h1,h2,h3,div,span')].filter(e=>V(e)&&/^AI Overview(?:$|\s)/i.test((e.innerText||'').trim())).sort((a,b)=>(a.innerText||'').length-(b.innerText||'').length)[0];if(m){let e=m,b=null;for(let i=0;e&&i<12;i++,e=e.parentElement){const t=(e.innerText||'').trim(),l=[...e.querySelectorAll('a[href]')].map(a=>G(a.href)).filter(Boolean).length;if(t.length>=250&&t.length<=20000&&(l>0||t.length>=500)){b=e;if(l>0&&t.length<12000)break}}n=b||m.parentElement;s=(n&&n.innerText||'').trim()}}if(!s){alert('Signal Atlas could not find an AI Overview on this page. Make sure it is expanded, then try again.');return}let e=n,a=[];for(let i=0;e&&i<8;i++,e=e.parentElement){const q=[...e.querySelectorAll('a[href]')].map(x=>G(x.href)).filter(Boolean);if(q.length){a=[...new Set(q)].slice(0,50);if(q.length>=2)break}}const known=['ToursByLocals','Viator','GetYourGuide','Withlocals','GoWithGuide','Showaround','Airbnb Experiences','Tripadvisor'],hosts=a.map(x=>{try{return new URL(x).hostname.replace(/^www\./,'')}catch{return''}}).filter(Boolean),mentioned=[...new Set([...known.filter(x=>s.toLowerCase().includes(x.toLowerCase())),...hosts])];const p={url:location.href,query:new URL(location.href).searchParams.get('q')||'',text:s,sources:a.join('\n'),mentioned:mentioned.join('\n')},w=open('about:blank','_blank');if(!w){alert('Please allow pop-ups for Google, then click the bookmark again.');return}w.name='signal-atlas:'+JSON.stringify(p);w.location='${target}'})()`);
+    bookmarkRef.current?.setAttribute("href", `javascript:(()=>{const G=h=>{try{let x=new URL(h,location.href);if(x.hostname.includes('google.')&&x.pathname==='/url'&&x.searchParams.get('q'))x=new URL(x.searchParams.get('q'));return x.protocol.startsWith('http')&&!x.hostname.includes('google.')?x.href:null}catch{return null}},V=e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'},z=getSelection();let n=z&&z.rangeCount?z.getRangeAt(0).commonAncestorContainer:null;n=n&&n.nodeType===3?n.parentElement:n;let s=(z&&z.toString()||'').trim();if(!s){const m=[...document.querySelectorAll('h1,h2,h3,div,span')].filter(e=>V(e)&&/^AI Overview(?:$|\s)/i.test((e.innerText||'').trim())).sort((a,b)=>(a.innerText||'').length-(b.innerText||'').length)[0];if(m){let e=m,b=null;for(let i=0;e&&i<12;i++,e=e.parentElement){const t=(e.innerText||'').trim(),l=[...e.querySelectorAll('a[href]')].map(a=>G(a.href)).filter(Boolean).length;if(t.length>=250&&t.length<=20000&&(l>0||t.length>=500)){b=e;if(l>0&&t.length<12000)break}}n=b||m.parentElement;s=(n&&n.innerText||'').trim()}}if(!s){alert('Signal Atlas could not find an AI Overview on this page. Make sure it is expanded, then try again.');return}let e=n,a=[];for(let i=0;e&&i<8;i++,e=e.parentElement){const q=[...e.querySelectorAll('a[href]')].map(x=>G(x.href)).filter(Boolean);if(q.length){a=[...new Set(q)].slice(0,50);if(q.length>=2)break}}const known=[${JSON.stringify(targetBrand)},'Viator','GetYourGuide','Withlocals','GoWithGuide','Showaround','Airbnb Experiences','Tripadvisor'],hosts=a.map(x=>{try{return new URL(x).hostname.replace(/^www\./,'')}catch{return''}}).filter(Boolean),mentioned=[...new Set([...known.filter(x=>s.toLowerCase().includes(x.toLowerCase())),...hosts])];const p={url:location.href,query:new URL(location.href).searchParams.get('q')||'',text:s,sources:a.join('\n'),mentioned:mentioned.join('\n')},w=open('about:blank','_blank');if(!w){alert('Please allow pop-ups for Google, then click the bookmark again.');return}w.name='signal-atlas:'+JSON.stringify(p);w.location='${target}'})()`);
     loadCaptures();
     loadInsights();
     if (capturedText) window.setTimeout(() => document.getElementById("capture-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
@@ -130,7 +132,7 @@ export default function Home() {
     setSaving(true);
     setMessage("");
     const data = new FormData(formElement);
-    data.set("tblMention", mention);
+    data.set("brandMention", mention);
     try {
       const response = await fetch("/api/captures", { method: "POST", body: data });
       if (response.status === 409) {
@@ -190,7 +192,7 @@ export default function Home() {
           <section className="hero">
             <p className="eyebrow">AI search visibility</p>
             <h1>Turn a search result<br />into <em>evidence.</em></h1>
-            <p className="dek">Capture what Google said, where ToursByLocals appeared, and which sources shaped the answer.</p>
+            <p className="dek">Capture what Google said, where {targetBrand} appeared, and which sources shaped the answer.</p>
             <div className="steps" aria-label="How it works">
               <span><b>01</b>Open a Google AI Overview</span>
               <span><b>02</b>Click your capture bookmark</span>
@@ -220,7 +222,7 @@ export default function Home() {
             <form className="capture-form" onSubmit={submit}>
               <div className="form-heading">
                 <div><p className="card-kicker">New snapshot</p><h2>What did Google show?</h2></div>
-                <span className={mention ? "detected yes" : "detected"}>{mention ? "ToursByLocals detected" : "Waiting for text"}</span>
+                <span className={mention ? "detected yes" : "detected"}>{mention ? `${targetBrand} detected` : "Waiting for text"}</span>
               </div>
 
               <label>Google search link<input required name="googleUrl" type="url" placeholder="https://www.google.com/search?q=..." value={form.googleUrl} onChange={(e) => { update("googleUrl", e.target.value); if (!form.query) update("query", queryFromGoogleUrl(e.target.value)); }} /></label>
@@ -229,10 +231,10 @@ export default function Home() {
                 <label>Your location <small>remembered automatically</small><input required name="location" autoComplete="address-level2" value={form.location} onChange={(e) => update("location", e.target.value)} placeholder="Vancouver, Canada" /></label>
               </div>
               <label>AI Overview text<textarea required name="aiText" rows={9} value={form.aiText} onChange={(e) => update("aiText", e.target.value)} placeholder="Paste the complete AI Overview, including headings and source names…" /></label>
-              {mention && <div className="mention-box"><span>Exact ToursByLocals mention</span><p>{mention}</p></div>}
+              {mention && <div className="mention-box"><span>Exact {targetBrand} mention</span><p>{mention}</p></div>}
               <div className="row">
                 <label>Sites or brands mentioned <small>one per line</small><textarea name="mentionedSites" rows={4} value={form.mentionedSites} onChange={(e) => update("mentionedSites", e.target.value)} placeholder={"Withlocals\nGetYourGuide\nViator"} /></label>
-                <label>Cited source URLs <small>one per line</small><textarea name="citedSources" rows={4} value={form.citedSources} onChange={(e) => update("citedSources", e.target.value)} placeholder={"https://www.toursbylocals.com/...\nhttps://example.com/..."} /></label>
+                <label>Cited source URLs <small>one per line</small><textarea name="citedSources" rows={4} value={form.citedSources} onChange={(e) => update("citedSources", e.target.value)} placeholder={`https://${targetDomain}/...\nhttps://example.org/...`} /></label>
               </div>
               <div className="row">
                 <label>Your name<input required name="contributor" value={form.contributor} onChange={(e) => update("contributor", e.target.value)} placeholder="Name" /></label>
@@ -246,7 +248,7 @@ export default function Home() {
       ) : view === "library" ? (
         <section className="library">
           <div className="library-heading"><div><p className="eyebrow">Shared intelligence</p><h1>Snapshot library</h1></div><button onClick={() => setView("capture")}>+ New capture</button></div>
-          <div className="metrics"><div><strong>{captures.length}</strong><span>Total snapshots</span></div><div><strong>{captures.filter((c) => c.tblMentioned).length}</strong><span>ToursByLocals mentions</span></div><div><strong>{captures.filter((c) => /toursbylocals\.com/i.test(c.citedSources || "")).length}</strong><span>ToursByLocals citations</span></div></div>
+          <div className="metrics"><div><strong>{captures.length}</strong><span>Total snapshots</span></div><div><strong>{captures.filter((c) => c.brandMentioned).length}</strong><span>{targetBrand} mentions</span></div><div><strong>{captures.filter((c) => (c.citedSources || "").split(/\s+/).some((value) => { try { return isBrandDomain(new URL(value).hostname); } catch { return false; } })).length}</strong><span>{targetBrand} citations</span></div></div>
           <div className="capture-list">
             {captures.length === 0 ? <div className="empty"><span>✦</span><h2>No snapshots yet</h2><p>Capture the first Google AI Overview to begin the evidence library.</p></div> : captures.map((capture) => (
               <article key={capture.id} className="capture-item">
@@ -256,7 +258,7 @@ export default function Home() {
                   <div><span>Mentioned</span><MentionChips value={inferredMentions(capture.aiText, capture.mentionedSites)} sources={capture.citedSources} /></div>
                   <div><span>Cited sources</span><SourceSummary value={capture.citedSources} /></div>
                 </div>
-                <div className="capture-actions"><span className={capture.tblMentioned ? "pill yes" : "pill"}>{capture.tblMentioned ? "Mentioned" : "Not mentioned"}</span><button className="view-button" onClick={() => setExpandedId(expandedId === capture.id ? null : capture.id)}>{expandedId === capture.id ? "Close snapshot" : "View snapshot"}</button><a href={capture.googleUrl} target="_blank" rel="noreferrer">Open Google search ↗</a>{capture.screenshotUrl && <a href={capture.screenshotUrl} target="_blank" rel="noreferrer">View screenshot ↗</a>}<button className="delete-button" onClick={() => deleteCapture(capture)} disabled={deletingId === capture.id}>{deletingId === capture.id ? "Deleting…" : "Delete"}</button></div>
+                <div className="capture-actions"><span className={capture.brandMentioned ? "pill yes" : "pill"}>{capture.brandMentioned ? "Mentioned" : "Not mentioned"}</span><button className="view-button" onClick={() => setExpandedId(expandedId === capture.id ? null : capture.id)}>{expandedId === capture.id ? "Close snapshot" : "View snapshot"}</button><a href={capture.googleUrl} target="_blank" rel="noreferrer">Open Google search ↗</a>{capture.screenshotUrl && <a href={capture.screenshotUrl} target="_blank" rel="noreferrer">View screenshot ↗</a>}<button className="delete-button" onClick={() => deleteCapture(capture)} disabled={deletingId === capture.id}>{deletingId === capture.id ? "Deleting…" : "Delete"}</button></div>
                 {expandedId === capture.id && <div className="snapshot-view">
                   <div className="snapshot-head"><span>Google AI Overview</span><small>Captured {new Date(capture.createdAt).toLocaleString()}</small></div>
                   <div className="snapshot-copy">{formatOverview(capture.aiText).map((paragraph, index) => <LinkedParagraph key={index} text={paragraph} sources={capture.citedSources} />)}</div>
@@ -271,8 +273,8 @@ export default function Home() {
           {!insights ? <div className="empty"><span>✦</span><h2>Analysing the library…</h2></div> : <>
             <div className="insight-kpis">
               <div><span>Snapshots analysed</span><strong>{insights.total}</strong><small>All captured searches</small></div>
-              <div><span>Mention rate</span><strong>{insights.mentionRate}%</strong><small>ToursByLocals appears in the answer</small></div>
-              <div><span>Citation rate</span><strong>{insights.citationRate}%</strong><small>{insights.tblCitationCount} of {insights.total} captures cite a ToursByLocals page</small></div>
+              <div><span>Mention rate</span><strong>{insights.mentionRate}%</strong><small>{targetBrand} appears in the answer</small></div>
+              <div><span>Citation rate</span><strong>{insights.citationRate}%</strong><small>{insights.brandCitationCount} of {insights.total} captures cite a {targetBrand} page</small></div>
               <div><span>Source coverage</span><strong>{insights.citationCoverage}%</strong><small>{insights.citationCoverageCount} of {insights.total} captures include source URLs</small></div>
             </div>
 
@@ -284,8 +286,8 @@ export default function Home() {
             <div className="insight-card wide"><div className="insight-title"><p className="card-kicker">Captured query performance</p><h2>Visibility across your actual searches</h2></div><div className="query-table"><div className="query-row query-head"><span>Captured query</span><span>Location</span><span>Visibility</span><span>Sources</span></div>{insights.queryRows.map((item) => <div className="query-row" key={item.id}><strong>{item.query}</strong><span>{item.location}</span><span className="status-group"><i className={item.mentioned ? "status on" : "status"}>Mentioned</i><i className={item.cited ? "status cited" : "status"}>Cited</i></span><span>{item.sourceCount || "—"}</span></div>)}</div></div>
 
             <div className="insight-grid lower">
-              <div className="insight-card"><div className="insight-title"><p className="card-kicker">Owned authority</p><h2>Top cited ToursByLocals pages</h2></div><RankedList items={insights.topTblPages} empty="No ToursByLocals source URLs recorded yet." /></div>
-              <div className="insight-card opportunities"><div className="insight-title"><p className="card-kicker">Content gaps</p><h2>Queries to act on next</h2></div>{insights.opportunities.length ? insights.opportunities.map((item) => <div className="opportunity" key={item.id}><span>{item.location}</span><strong>{item.query}</strong><p>{item.competitors.length ? `${item.competitors.join(", ")} appeared; ToursByLocals did not.` : "ToursByLocals did not appear in this answer."}</p></div>) : <p className="empty-copy">No visibility gaps found in the current data.</p>}</div>
+              <div className="insight-card"><div className="insight-title"><p className="card-kicker">Owned authority</p><h2>Top cited {targetBrand} pages</h2></div><RankedList items={insights.topBrandPages} empty={`No ${targetBrand} source URLs recorded yet.`} /></div>
+              <div className="insight-card opportunities"><div className="insight-title"><p className="card-kicker">Content gaps</p><h2>Queries to act on next</h2></div>{insights.opportunities.length ? insights.opportunities.map((item) => <div className="opportunity" key={item.id}><span>{item.location}</span><strong>{item.query}</strong><p>{item.competitors.length ? `${item.competitors.join(", ")} appeared; ${targetBrand} did not.` : `${targetBrand} did not appear in this answer.`}</p></div>) : <p className="empty-copy">No visibility gaps found in the current data.</p>}</div>
             </div>
           </>}
         </section>
