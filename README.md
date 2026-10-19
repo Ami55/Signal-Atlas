@@ -16,7 +16,7 @@ No OpenAI API key is required.
 4. In **Storage**, create a **Blob** store with public access and connect it to the project. Vercel adds `BLOB_READ_WRITE_TOKEN` automatically.
 5. Open **Deployments** and redeploy the latest deployment.
 
-The database table is created automatically the first time the app loads. The 58 records exported from the previous Sites/Cloudflare edition are seeded into Neon automatically once. Duplicate queries are skipped and no import control is shown in the app. Screenshot files were stored separately and are not included in the seed.
+The public library table is created automatically the first time the app loads. Two fictional examples are seeded once. Duplicate queries are skipped. Previous capture tables are preserved separately and are not exposed by the public app.
 
 ## Environment variables
 
@@ -33,3 +33,7 @@ npm run dev
 ```
 
 Copy `.env.example` to `.env.local` and supply your own Neon and Blob credentials before running locally.
+
+## Public demo and target brand
+
+Set NEXT_PUBLIC_TARGET_BRAND and NEXT_PUBLIC_TARGET_DOMAIN in Vercel, then rebuild to change the tracked brand. Defaults are fictional Example Travel and example.com. Public captures use the separate public_brand_captures table and fictional demo seed. Previous capture tables are preserved and are not read by the public app. Demo rows are labelled as fictional; no screenshot is imported.
