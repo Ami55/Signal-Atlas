@@ -292,7 +292,7 @@ export default function Home() {
           </>}
         </section>
       )}
-      <footer><span>Signal Atlas</span><p>© 2026 Signal Atlas. Developed by Ami – SEO Girl. All rights reserved.</p></footer>
+      <footer><span>Signal Atlas</span><p>© 2026 Signal Atlas. Developed by <strong>SEO Girl - Ami</strong>. All rights reserved.</p></footer>
     </main>
   );
 }
